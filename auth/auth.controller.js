@@ -60,7 +60,7 @@ module.exports.login = async (req, res) => {
 
 module.exports.logout = async (req, res) => {
   try {
-    const accessTokenId = req.user.accessTokenId;
+    const accessTokenId = req.user.tokenId;
     const refreshToken = req.cookies.refreshToken;
     if (!refreshToken) {
       return res.status(401).json({ message: "Missing refresh token" });
@@ -92,7 +92,7 @@ module.exports.refreshToken = async (req, res) => {
       req.ip || req.headers["x-forwarded-for"] || req.connection.remoteAddress;
 
     const result = await authService.refreshToken({
-      refreshToken,
+      cmRefreshToken: refreshToken,
       ipAddress,
     });
 

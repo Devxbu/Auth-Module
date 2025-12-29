@@ -63,7 +63,7 @@ class RefreshRepository {
       userId,
       isRevoked: false,
       expiresAt: { $gt: new Date() },
-    }).toArray();
+    });
     const tokenIds = refreshTokens.map((t) => t.tokenId);
     return tokenIds;
   }

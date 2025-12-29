@@ -387,9 +387,9 @@ class AuthService {
       // Check if token is blacklisted
       const isBlacklisted = await redisService.getBlacklistData(tokenId);
       if (isBlacklisted) {
-        if (blacklistData.reason === "rotation_attack") {
+        if (isBlacklisted.reason === "rotation_attack") {
           await emailService.sendSecurityAlert(
-            blacklistData.userId,
+            isBlacklisted.userId,
             "Rotation attack detected"
           );
         }
@@ -402,7 +402,7 @@ class AuthService {
       // Hash refresh token
       const tokenHash = crypto
         .createHash("sha256")
-        .update(cmRefreshToken)
+        .update(tokenSecret)
         .digest("hex");
 
       // Find refresh token
@@ -501,8 +501,6 @@ class AuthService {
         familyId: refreshTokenDoc.familyId,
         deviceInfo: refreshTokenDoc.deviceInfo,
         ipAddress,
-        issuedAt,
-        expiresAt,
       };
 
       await redisService.setAccessToken(accessTokenId, sessionData);
@@ -512,7 +510,6 @@ class AuthService {
         accessToken,
         refreshToken: newRefreshToken,
         tokenType: "Bearer",
-        expiresAt,
         user: {
           userId: refreshTokenDoc.userId,
           email: refreshTokenDoc.email,
@@ -557,12 +554,14 @@ class AuthService {
   async logoutAll(userId) {
     try {
       // Revoke all refresh tokens
-      const tokenIds = await refreshRepository.getRefreshTokensByUserId(userId);
-      await refreshRepository.revokeAllTokens(userId);
+      const tokenIds = await refreshRepository.getRefreshTokensByUserId(
+        userId.userId
+      );
+      await refreshRepository.revokeAllTokens(userId.userId);
 
       // Revoke all access tokens and blacklist refresh tokens
-      await redisService.blacklistAllRefreshTokens(tokenIds, userId);
-      await redisService.revokeAllUserSessions(userId);
+      await redisService.blacklistAllRefreshTokens(tokenIds, userId.userId);
+      await redisService.revokeAllUserSessions(userId.userId);
       return {
         message: "Logged out successfully",
       };
